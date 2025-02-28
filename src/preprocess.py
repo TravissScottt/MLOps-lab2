@@ -2,7 +2,6 @@ import configparser
 import os
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import sys
 import traceback
 
@@ -34,15 +33,11 @@ class DataMaker():
             os.path.join(self.project_path, "Test_Car_y.csv")
         ]
         
-        # Препроцессоры
-        self.label_encoder = LabelEncoder()
-        self.scaler = MinMaxScaler()
-        
         self.log.info("DataMaker is ready")
 
     def get_data(self) -> bool:
         """
-            Выполняет предобработку данных и сохраняет (X,y) в файлы
+            Разделяет данные на X/y и сохраняет в файлы
         """
         try:
             dataset = pd.read_csv(self.data_path)
@@ -50,18 +45,6 @@ class DataMaker():
         except FileNotFoundError:
             self.log.error(traceback.format_exc())
             sys.exit(1)
-        
-        # Кодируем порядковые признаки
-        dataset["Doors"] = self.label_encoder.fit_transform(dataset["Doors"])
-        dataset["Owner_Count"] = self.label_encoder.fit_transform(dataset["Owner_Count"])
-
-        # Кодируем номинальные признаки (One-Hot Encoding)
-        columns_encode = ["Brand", "Model", "Year", "Fuel_Type", "Transmission"]
-        dataset = pd.get_dummies(dataset, columns=columns_encode, drop_first=True, dtype="int")
-        
-        # Нормализуем числовые признаки
-        num_columns = ["Engine_Size", "Mileage"]
-        dataset[num_columns] = self.scaler.fit_transform(dataset[num_columns])
         
         # Разделяем X и y и сохраняем по файлам
         X = dataset.drop(["Price"], axis=1)
