@@ -169,5 +169,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-
-experiments/rand_forest.sav

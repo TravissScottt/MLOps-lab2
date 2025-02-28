@@ -12,6 +12,7 @@ import sys
 import time
 import traceback
 import yaml
+from joblib import load
 
 from logger import Logger
 
@@ -89,7 +90,8 @@ class Predictor():
         # Создаем нашу обученную модель
         model_path = self.config["RAND_FOREST"]["path"]
         try:
-            model = pickle.load(open(model_path, "rb"))
+            # model = pickle.load(open(model_path, "rb"))
+            model = load(model_path)
         except FileNotFoundError:
             self.log.error("Ошибка: модель не найдена!")
             self.log.error(traceback.format_exc())

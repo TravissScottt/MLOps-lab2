@@ -5,6 +5,7 @@ import pickle
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler
 from sklearn.metrics import r2_score
+from joblib import dump
 import sys
 import traceback
 
@@ -122,8 +123,12 @@ class ForestModel():
         # os.remove('config.ini')
         with open('config.ini', 'w') as configfile:
             self.config.write(configfile)
-        with open(path, 'wb') as f:
-            pickle.dump(model, f)
+            
+        # with open(path, 'wb') as f:
+        #     pickle.dump(model, f)
+        
+        # Сохраняем модель с компрессией
+        dump(model, path, compress=3)
 
         self.log.info(f'Модель сохранена в {path}')
         
