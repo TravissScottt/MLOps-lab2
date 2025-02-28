@@ -101,7 +101,7 @@ class ForestModel():
         if predict:
             y_pred = model.predict(self.X_test)
             r2 = r2_score(self.y_test, y_pred)
-            self.log.info(f"📌 R² Score: {r2:.4f}")
+            self.log.info(f" R2 Score: {r2:.4f}")
         
         # Сохраняем модель и параметры    
         params = {

@@ -100,7 +100,7 @@ class Predictor():
             try:
                 y_pred = model.predict(self.X_test)
                 r2 = r2_score(self.y_test, y_pred)
-                self.log.info(f"Smoke test пройден. R²: {r2:.4f}")
+                self.log.info(f"Smoke test пройден. R2: {r2:.4f}")
             except Exception:
                 self.log.error("Ошибка во время smoke теста!")
                 self.log.error(traceback.format_exc())
