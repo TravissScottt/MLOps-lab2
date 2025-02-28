@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import pickle
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler
 from sklearn.metrics import r2_score
 import sys
 import traceback
@@ -15,9 +15,6 @@ SHOW_LOG = True
 
 class ForestModel():
     def __init__(self) -> None:
-        """
-            Инициализация модели
-        """
         # Создаем объекты логера и конфигуратора,
         # и считываем конфигурацию
         logger = Logger(SHOW_LOG)
@@ -37,12 +34,11 @@ class ForestModel():
             sys.exit(1)
         
         try:    
-        # Кодируем порядковые признаки
-            label_encoder = LabelEncoder()
+            # Кодируем порядковые признаки
+            ordinal_encoder = OrdinalEncoder()
             ordinal_columns = ["Doors", "Year", "Owner_Count"]
-            for col in ordinal_columns:
-                self.X_train[col] = label_encoder.fit_transform(self.X_train[col])
-                self.X_test[col] = label_encoder.transform(self.X_test[col])
+            self.X_train[ordinal_columns] = ordinal_encoder.fit_transform(self.X_train[ordinal_columns])
+            self.X_test[ordinal_columns] = ordinal_encoder.transform(self.X_test[ordinal_columns])
                 
             # Кодирование категориальных признаков
             categorical_columns = ["Brand", "Model", "Fuel_Type", "Transmission"]
@@ -55,10 +51,10 @@ class ForestModel():
             self.X_train[num_columns] = self.scaler.fit_transform(self.X_train[num_columns])
             self.X_test[num_columns] = self.scaler.transform(self.X_test[num_columns])
             
-            self.log.info("Данные готовы для подачи в модель")
-                            
+            self.log.info("Данные готовы для подачи в модель")                    
         except Exception:
             self.log.error('Ошибка подготовки данных для подачи в модель')
+            self.log.error(traceback.format_exc())
             sys.exit(1)
 
         # Создаем пути

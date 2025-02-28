@@ -12,7 +12,6 @@ SHOW_LOG = True # Отображать ли логи в консоли
 
 
 class DataMaker():
-
     def __init__(self) -> None:
         # Создаем объекты логера и конфигуратора
         logger = Logger(SHOW_LOG)
