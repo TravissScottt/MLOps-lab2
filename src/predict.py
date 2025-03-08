@@ -11,7 +11,7 @@ import sys
 import traceback
 import yaml
 
-from logger import Logger
+from .logger import Logger
 
 SHOW_LOG = True
 
@@ -24,42 +24,48 @@ class PipelinePredictor():
         self.log = logger.get_logger(__name__)
         self.config.read("config.ini")
         
+        # Путь к пайплайну
+        self.pipeline_path = self.config["RAND_FOREST"]["path"]
+        
+        # Загружаем пайплайн
+        try:
+            with open(self.pipeline_path, "rb") as f:
+                self.pipeline = load(f)
+            self.log.info("Пайплайн успешно загружен")
+        except FileNotFoundError:
+            self.log.error("Файл с пайплайном не найден")
+            sys.exit(1)
+
+    def predict(self, X_input: pd.DataFrame) -> float:
+        """
+            Предсказание через API
+        """
+        return self.pipeline.predict(X_input)
+    
+    def test(self) -> bool:
+        """
+            Тестирование модели
+        """
         # Создаем парсер для аргументов
-        self.parser = argparse.ArgumentParser(description="Predictor")
+        parser = argparse.ArgumentParser(description="Predictor")
         # Выбор типа теста:
         # smoke -> быстрая проверка работы модели (Smoke Test)
         # func -> функциональные тесты на готовых JSON-файлах
-        self.parser.add_argument("--test", "-t",
+        parser.add_argument("--test", "-t",
                                  type=str,
                                  help="Тип тестирования (smoke или func)",
                                  default="smoke",
                                  choices=["smoke", "func"])
         
-        # Путь к пайплайну
-        self.pipeline_path = self.config["RAND_FOREST"]["path"]
-
-    def predict(self) -> bool:
-        """
-            Загружает пайплайн и делает предсказание
-        """
         # Передаем аргументы
-        args = self.parser.parse_args()
-        
-        # Загружаем пайплайн
-        try:
-            with open(self.pipeline_path, "rb") as f:
-                pipeline = load(f)
-            self.log.info("Пайплайн успешно загружен")
-        except FileNotFoundError:
-            self.log.error("Файл с пайплайном не найден")
-            sys.exit(1)
+        args = parser.parse_args()
             
         # Smoke test    
         if args.test == "smoke":
             try:
                 X = pd.read_csv(self.config["SPLIT_DATA"]["X_test"], index_col=0)
                 y = pd.read_csv(self.config["SPLIT_DATA"]["y_test"], index_col=0).values.ravel()
-                y_pred = pipeline.predict(X)
+                y_pred = self.pipeline.predict(X)
                 r2 = r2_score(y, y_pred)
                 self.log.info(f"Smoke test пройден. R2: {r2:.4f}")
                               
@@ -85,7 +91,7 @@ class PipelinePredictor():
 
                 try:
                     # Тестируем модель
-                    y_pred = pipeline.predict(X)
+                    y_pred = self.pipeline.predict(X)
                     r2 = r2_score(y, y_pred)
                     self.log.info(f"Func test {test} пройден. R2: {r2:.4f}")
 
@@ -122,4 +128,4 @@ class PipelinePredictor():
 
 if __name__ == "__main__":
     predictor = PipelinePredictor()
-    predictor.predict()
+    predictor.test()
