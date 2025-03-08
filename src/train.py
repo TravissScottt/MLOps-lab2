@@ -2,9 +2,11 @@ import configparser
 import os
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler, OneHotEncoder
 from sklearn.metrics import r2_score
-from joblib import dump
+import pickle
 import sys
 import traceback
 
@@ -13,7 +15,7 @@ from logger import Logger
 SHOW_LOG = True
 
 
-class ForestModel():
+class ForestPipelineModel():
     def __init__(self) -> None:
         # Создаем объекты логера и конфигуратора,
         # и считываем конфигурацию
@@ -25,115 +27,90 @@ class ForestModel():
         # Загружаем данные
         try:
             self.X_train = pd.read_csv(self.config["SPLIT_DATA"]["X_train"], index_col=0)
-            self.y_train = pd.read_csv(self.config["SPLIT_DATA"]["y_train"], index_col=0)
+            self.y_train = pd.read_csv(self.config["SPLIT_DATA"]["y_train"], index_col=0).values.ravel()
             self.X_test = pd.read_csv(self.config["SPLIT_DATA"]["X_test"], index_col=0)
-            self.y_test = pd.read_csv(self.config["SPLIT_DATA"]["y_test"], index_col=0)
+            self.y_test = pd.read_csv(self.config["SPLIT_DATA"]["y_test"], index_col=0).values.ravel()
             self.log.info("Данные загружены успешно")
         except FileNotFoundError:
             self.log.error(traceback.format_exc())
             sys.exit(1)
         
-        try:    
-            # Кодируем порядковые признаки
-            ordinal_encoder = OrdinalEncoder()
-            ordinal_columns = ["Doors", "Year", "Owner_Count"]
-            self.X_train[ordinal_columns] = ordinal_encoder.fit_transform(self.X_train[ordinal_columns])
-            self.X_test[ordinal_columns] = ordinal_encoder.transform(self.X_test[ordinal_columns])
-                
-            # Кодирование категориальных признаков
-            categorical_columns = ["Brand", "Model", "Fuel_Type", "Transmission"]
-            self.X_train = pd.get_dummies(self.X_train, columns=categorical_columns, drop_first=True, dtype="int")
-            self.X_test = pd.get_dummies(self.X_test, columns=categorical_columns, drop_first=True, dtype="int")
-                
-            # Нормализация числовых признаков
-            num_columns = ["Engine_Size", "Mileage"]
-            self.scaler = MinMaxScaler()
-            self.X_train[num_columns] = self.scaler.fit_transform(self.X_train[num_columns])
-            self.X_test[num_columns] = self.scaler.transform(self.X_test[num_columns])
-            
-            self.log.info("Данные готовы для подачи в модель")                    
-        except Exception:
-            self.log.error('Ошибка подготовки данных для подачи в модель')
-            self.log.error(traceback.format_exc())
-            sys.exit(1)
+        # Определение колонок для преобразования
+        self.ordinal_columns = ["Doors", "Year", "Owner_Count"]
+        self.categorical_columns = ["Brand", "Model", "Fuel_Type", "Transmission"]
+        self.numeric_columns = ["Engine_Size", "Mileage"]
 
-        # Создаем пути
-        self.project_path = os.path.join(os.getcwd(), "experiments")
-        self.rand_forest_path = os.path.join(self.project_path, "rand_forest.sav")
+        # Путь для сохранения пайплайна
+        self.pipeline_path = os.path.join(os.getcwd(), "experiments", "rand_forest_pipeline.pkl")
 
-        self.log.info("Модель готова!")
-
-    def train_forest(self, use_config: bool, n_trees=500, criterion="poisson", max_depth=20, min_samples_leaf=2, predict=False) -> bool:
+    def create_pipeline(self, use_config: bool) -> Pipeline:
         """
-            Обучение модели RandomForestRagressor
+            Создание пайплайна на основе RandomForestRegressor
         """
         # Получаем параметры
         if use_config:
             try:
-                n_trees = self.config.getint("RAND_FOREST", "n_estimators")
-                criterion = self.config["RAND_FOREST"]["criterion"]
-                max_depth = self.config.getint("RAND_FOREST", "max_depth")
-                min_samples_leaf = self.config.getint("RAND_FOREST", "min_samples_leaf")
+                params = {
+                    'n_estimators': self.config.getint("RAND_FOREST", "n_estimators"),
+                    'criterion': self.config["RAND_FOREST"]["criterion"],
+                    'max_depth': self.config.getint("RAND_FOREST", "max_depth"),
+                    'min_samples_leaf': self.config.getint("RAND_FOREST", "min_samples_leaf")
+                }
             except KeyError:
                 self.log.error(traceback.format_exc())
-                self.log.warning('Ошибка при загрузке параметров из config.ini')
                 sys.exit(1)
-         
-        # Создаем модель        
-        model = RandomForestRegressor(
-            n_estimators=n_trees,
-            criterion=criterion,
-            max_depth=max_depth,
-            min_samples_leaf=min_samples_leaf,
-            random_state=42
-        )
+        else:
+            params = {'n_estimators': 100, 'criterion': 'poisson', 'max_depth': 18, 'min_samples_leaf': 2}
         
-        # Обучение    
+        # Сохранение параметров в конфиг
+        self.config["RAND_FOREST"] = {k: str(v) for k, v in params.items()}
+        with open("config.ini", "w") as configfile:
+            self.config.write(configfile)
+
+        # Создание препроцессора
+        preprocessor = ColumnTransformer(transformers=[
+            ('ord_enc', OrdinalEncoder(), self.ordinal_columns),
+            ('one_hot', OneHotEncoder(drop='first', dtype='int'), self.categorical_columns),
+            ('scaler', MinMaxScaler(), self.numeric_columns)
+        ])
+
+        # Создание пайплайна
+        pipeline = Pipeline([
+            ('preprocessor', preprocessor),
+            ('model', RandomForestRegressor(**params, random_state=42))
+        ])
+
+        return pipeline
+
+    def train_and_evaluate(self, pipeline: Pipeline, predict: bool = True):
+        """
+            Обучение и тестирование пайплайна
+        """
         try:
-            model.fit(self.X_train, self.y_train)
-            self.log.info("Модель Random Forest обучена успешно")
+            pipeline.fit(self.X_train, self.y_train)
+            self.log.info("Пайплайн обучен успешно")
         except Exception:
-            self.log.error("Ошибка при обучении модели")
+            self.log.error("Ошибка при обучении пайплайна")
             self.log.error(traceback.format_exc())
             sys.exit(1)
-        
-        # Рассчитываем метрику, если нужно
+
         if predict:
-            y_pred = model.predict(self.X_test)
+            y_pred = pipeline.predict(self.X_test)
             r2 = r2_score(self.y_test, y_pred)
-            self.log.info(f" R2 Score: {r2:.4f}")
-        
-        # Сохраняем модель и параметры    
-        params = {
-            "n_estimators": n_trees,
-            "criterion": criterion,
-            "max_depth": max_depth,
-            "min_samples_leaf": min_samples_leaf,
-            "path": self.rand_forest_path
-        }
-        
-        return self.save_model(model, self.rand_forest_path, "RAND_FOREST", params)
+            self.log.info(f"R2 Score: {r2:.4f}")
 
-    def save_model(self, model, path: str, name: str, params: dict) -> bool:
-        """
-            Сохранение модели и параметров в config.ini
-        """
-        self.config[name] = params
-        # os.remove('config.ini')
-        with open('config.ini', 'w') as configfile:
-            self.config.write(configfile)
-            
-        # with open(path, 'wb') as f:
-        #     pickle.dump(model, f)
-        
-        # Сохраняем модель с компрессией
-        dump(model, path, compress=3)
+        self.save_pipeline(pipeline)
 
-        self.log.info(f'Модель сохранена в {path}')
-        
-        return os.path.isfile(path)
+    def save_pipeline(self, pipeline: Pipeline):
+        """
+            Сохранение пайплайна
+        """
+        with open(self.pipeline_path, 'wb') as f:
+            pickle.dump(pipeline, f)
+        self.log.info(f'Пайплайн сохранён в {self.pipeline_path}')
 
 
 if __name__ == "__main__":
-    multi_model = ForestModel()
-    multi_model.train_forest(use_config=False, predict=True)
+    forest_pipeline = ForestPipelineModel()
+    pipeline = forest_pipeline.create_pipeline(use_config=False)
+    forest_pipeline.train_and_evaluate(pipeline, predict=True)
