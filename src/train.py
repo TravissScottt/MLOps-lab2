@@ -62,8 +62,9 @@ class ForestPipelineModel():
         else:
             params = {'n_estimators': 100, 'criterion': 'poisson', 'max_depth': 18, 'min_samples_leaf': 2}
         
-        # Сохранение параметров в конфиг
+        # Сохранение параметров и пути в конфиг
         self.config["RAND_FOREST"] = {k: str(v) for k, v in params.items()}
+        self.config["RAND_FOREST"]['path'] = self.pipeline_path
         with open("config.ini", "w") as configfile:
             self.config.write(configfile)
 
