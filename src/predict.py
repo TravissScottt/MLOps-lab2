@@ -129,7 +129,7 @@ class Predictor():
                         # Предикт и результаты
                         y_pred = model.predict(X)
                         r2 = r2_score(y, y_pred)
-                        self.log.info(f"Func test {test} пройден. R²: {r2:.4f}")
+                        self.log.info(f"Func test {test} пройден. R2: {r2:.4f}")
                         
                         # Cохраняем эксперементальные данные
                         exp_data = {

@@ -1,7 +1,6 @@
 import configparser
 import os
 import pandas as pd
-import pickle
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler
 from sklearn.metrics import r2_score

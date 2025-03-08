@@ -1,5 +1,6 @@
 import uvicorn
 import pickle
+from joblib import load
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -18,7 +19,8 @@ config.read("config.ini")
 # Загружаем модель
 try:
     model_path = config["RAND_FOREST"]["path"]
-    model = pickle.load(open(model_path, "rb"))
+    # model = pickle.load(open(model_path, "rb"))
+    model = load(model_path)
 except FileNotFoundError:
     raise Exception("Ошибка: модель не найдена!")
 
@@ -55,22 +57,25 @@ class InputData(BaseModel):
     Fuel_Type: str
     Transmission: str
 
-# Маршрут для предсказаний
 @app.post("/predict/")
 async def predict(data: InputData):
     try:
         # Преобразуем входные данные в DataFrame
-        df = pd.DataFrame([data.dict()])
+        df = pd.DataFrame([data.model_dump()])
 
+        log.info(f"Фичи в `df` перед предсказанием: {list(df.columns)}")
         # Кодируем порядковые признаки
         df[ordinal_columns] = ordinal_encoder.transform(df[ordinal_columns])
-
+        log.info(f"Фичи в `df` перед предсказанием: {list(df.columns)}")
         # Кодируем категориальные признаки
         df = pd.get_dummies(df, columns=categorical_columns, drop_first=True, dtype="int")
-        # df = df.reindex(columns=X_train.columns, fill_value=0)
-
+        df, _ = df.align(X_train, join="left", axis=1, fill_value=0)
+        log.info(f"Фичи в `df` перед предсказанием: {list(df.columns)}")
         # Масштабируем числовые признаки
         df[num_columns] = scaler.transform(df[num_columns])
+        log.info(f"Фичи в `df` перед предсказанием: {list(df.columns)}")
+        log.info(f"Фичи в `X_train`: {list(X_train.columns)}")
+        log.info(f"Фичи в `df` перед предсказанием: {list(df.columns)}")
 
         # Делаем предсказание
         price_pred = model.predict(df)[0]
