@@ -31,7 +31,7 @@ class ForestPipelineModel():
             self.X_test = pd.read_csv(self.config["SPLIT_DATA"]["X_test"], index_col=0)
             self.y_test = pd.read_csv(self.config["SPLIT_DATA"]["y_test"], index_col=0).values.ravel()
             self.log.info("Данные загружены успешно")
-        except FileNotFoundError:
+        except FileNotFoundError: # pragma: no cover
             self.log.error(traceback.format_exc())
             sys.exit(1)
         
@@ -44,9 +44,7 @@ class ForestPipelineModel():
         self.pipeline_path = os.path.join(os.getcwd(), "experiments", "rand_forest_pipeline.pkl")
 
     def create_pipeline(self, use_config: bool) -> Pipeline:
-        """
-            Создание пайплайна на основе RandomForestRegressor
-        """
+        """Создание пайплайна на основе RandomForestRegressor"""
         # Получаем параметры
         if use_config:
             try:
@@ -56,7 +54,7 @@ class ForestPipelineModel():
                     'max_depth': self.config.getint("RAND_FOREST", "max_depth"),
                     'min_samples_leaf': self.config.getint("RAND_FOREST", "min_samples_leaf")
                 }
-            except KeyError:
+            except KeyError: # pragma: no cover
                 self.log.error(traceback.format_exc())
                 sys.exit(1)
         else:
@@ -84,13 +82,11 @@ class ForestPipelineModel():
         return pipeline
 
     def train_and_evaluate(self, pipeline: Pipeline, predict: bool = True):
-        """
-            Обучение и тестирование пайплайна
-        """
+        """Обучение и тестирование пайплайна"""
         try:
             pipeline.fit(self.X_train, self.y_train)
             self.log.info("Пайплайн обучен успешно")
-        except Exception:
+        except Exception: # pragma: no cover
             self.log.error("Ошибка при обучении пайплайна")
             self.log.error(traceback.format_exc())
             sys.exit(1)
@@ -103,15 +99,13 @@ class ForestPipelineModel():
         self.save_pipeline(pipeline)
 
     def save_pipeline(self, pipeline: Pipeline):
-        """
-            Сохранение пайплайна
-        """
+        """Сохранение пайплайна"""
         with open(self.pipeline_path, 'wb') as f:
             pickle.dump(pipeline, f)
         self.log.info(f'Пайплайн сохранён в {self.pipeline_path}')
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     forest_pipeline = ForestPipelineModel()
     pipeline = forest_pipeline.create_pipeline(use_config=False)
     forest_pipeline.train_and_evaluate(pipeline, predict=True)

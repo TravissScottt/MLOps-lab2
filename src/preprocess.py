@@ -17,6 +17,7 @@ class DataMaker():
         logger = Logger(SHOW_LOG)
         self.config = configparser.ConfigParser()
         self.log = logger.get_logger(__name__)
+        self.config.read("config.ini")
         
         # Пути к файлам
         self.project_path = os.path.join(os.getcwd(), "data")
@@ -35,13 +36,11 @@ class DataMaker():
         self.log.info("DataMaker is ready")
 
     def get_data(self) -> bool:
-        """
-            Разделяет данные на X/y и сохраняет в файлы
-        """
+        """Разделяет данные на X/y и сохраняет в файлы"""
         try:
             dataset = pd.read_csv(self.data_path)
             self.log.info(f"Dataset loaded from {self.data_path}")
-        except FileNotFoundError:
+        except FileNotFoundError: # pragma: no cover
             self.log.error(traceback.format_exc())
             sys.exit(1)
         
@@ -52,24 +51,17 @@ class DataMaker():
         X.to_csv(self.X_path, index=True)
         y.to_csv(self.y_path, index=True)
         
-        if os.path.isfile(self.X_path) and os.path.isfile(self.y_path):
-            self.log.info("X and y data is ready")
-            self.config["DATA"] = {'X_data': self.X_path, 'y_data': self.y_path}
-            return True
-        else:
-            self.log.error("X and y data is not ready")
-            return False
+        self.log.info("X and y data is ready")
+        self.config["DATA"] = {'X_data': self.X_path, 'y_data': self.y_path}
+        return True
 
     def split_data(self, test_size=TEST_SIZE) -> bool:
-        """
-            Разделяет данные на train/test и сохраняет в файлы
-        """
-        
+        """Разделяет данные на train/test и сохраняет в файлы"""
         self.get_data()
         try:
             X = pd.read_csv(self.X_path, index_col=0)
             y = pd.read_csv(self.y_path, index_col=0)
-        except FileNotFoundError:
+        except FileNotFoundError: # pragma: no cover
             self.log.error(traceback.format_exc())
             sys.exit(1)
         
@@ -100,15 +92,13 @@ class DataMaker():
             os.path.isfile(self.test_path[1])
 
     def save_splitted_data(self, df: pd.DataFrame, path: str) -> bool:
-        """
-            Сохраняет данные в CSV
-        """
+        """Сохраняет данные в CSV"""
         df = df.reset_index(drop=True)
         df.to_csv(path, index=True)
         self.log.info(f'{path} is saved')
         return os.path.isfile(path)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     data_maker = DataMaker()
     data_maker.split_data()

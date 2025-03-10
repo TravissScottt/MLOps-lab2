@@ -1,0 +1,6 @@
+2025-03-10 05:24:41,909 Ч predict Ч INFO Ч ѕайплайн успешно загружен
+2025-03-10 05:24:41,960 Ч predict Ч INFO Ч Smoke test пройден. R2: 0.9707
+2025-03-10 05:24:41,978 Ч predict Ч INFO Ч Func tests пройдены. »тоговый R2: 0.9521
+4:41,978 Ч predict Ч INFO Ч Func tests пройдены. »тоговый R2: 0.9521
+4:41,978 Ч predict Ч INFO Ч Func tests пройдены. »тоговый R2: 0.9521
+4:41,978 Ч predict Ч INFO Ч Func tests пройдены. »тоговый R2: 0.9521

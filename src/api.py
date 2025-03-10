@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import pandas as pd
-from .predict import PipelinePredictor
+from predict import PipelinePredictor
 
 # Инициализируем предиктор
 predictor = PipelinePredictor()
@@ -19,10 +19,7 @@ class CarFeatures(BaseModel):
     Transmission: str
     Engine_Size: float
     Mileage: float
-
-@app.get("/")
-def home():
-    return {"message": "API is working!"}
+    
 
 @app.post("/predict")
 def predict(features: CarFeatures):
