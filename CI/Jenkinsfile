@@ -80,11 +80,12 @@ pipeline {
                             echo "No container running"
                             exit 1
                         )
-                        docker logs --tail 1000 -f %container_id%
+                        docker logs --tail 1000 %container_id%
                     '''
                 }
             }
         }
+
 
         stage('Push Docker Image to DockerHub') {
             steps {
