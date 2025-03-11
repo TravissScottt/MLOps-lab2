@@ -34,6 +34,7 @@ pipeline {
                 dir("CI-CD-pipeline-Lab-1") {
                     bat '''
                         chcp 65001
+                        call "C:\\Users\\Ogurchikov\\anaconda3\\Scripts\\activate.bat" mlops
                         pytest --cov=src
                     '''
                 }
