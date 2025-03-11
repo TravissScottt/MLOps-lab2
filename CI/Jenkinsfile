@@ -11,7 +11,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('* * * * *')
+        pollSCM('H/5 * * * *')
     }
 
     stages {
@@ -49,7 +49,6 @@ pipeline {
             }
         }
 
-
         stage('Login to DockerHub') {
             steps {
                 bat 'chcp 65001 && docker login -u %DOCKERHUB_CREDS_USR% -p %DOCKERHUB_CREDS_PSW%'
@@ -65,7 +64,6 @@ pipeline {
                         bat '''
                             chcp 65001
                             cd CI-CD-pipeline-Lab-1
-
                             docker compose up -d
                         '''
                     }
