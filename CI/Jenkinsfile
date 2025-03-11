@@ -103,6 +103,9 @@ pipeline {
 
     post {
         always {
+            bat 'chcp 65001 && docker stop api_container'
+            bat 'chcp 65001 && docker rm api_container'
+            bat 'chcp 65001 && docker rmi travissscottt/api_car_price:latest'
             bat 'chcp 65001 && docker logout'
             cleanWs()
         }
