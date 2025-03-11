@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import pandas as pd
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.getcwd(), "src"))
+
 from predict import PipelinePredictor
 
 # Инициализируем предиктор
