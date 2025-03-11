@@ -23,6 +23,14 @@ pipeline {
             }
         }
 
+        stage('Download Data with DVC') {
+            steps {
+                dir("CI-CD-pipeline-Lab-1") {
+                    bat 'dvc pull'
+                }
+            }
+        }
+
         stage('Checkout Repo Dir') {
             steps {
                 bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && dir'
