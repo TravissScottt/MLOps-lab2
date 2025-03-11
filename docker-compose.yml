@@ -1,5 +1,6 @@
 services:
   api:
+    build: .
     image: api_car_price:latest
     container_name: api_container
     ports:

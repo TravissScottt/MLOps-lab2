@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDS=credentials('travissscottt-dockerhub')
+        LC_ALL = "en_US.UTF-8"
+        LANG    = "en_US.UTF-8"
+        LANGUAGE = "en_US.UTF-8"
+    }
+
+    options {
+        timestamps()
+        skipDefaultCheckout(true)
+    }
+
+    stages {
+
+        stage('Clone github repository') {
+            steps {
+                cleanWs()
+                bat 'chcp 65001 && git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
+            }
+        }
+
+        stage('Checkout repo dir') {
+            steps {
+                bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && dir'
+            }
+        }
+
+        stage('Run unit tests') {
+            steps {
+                dir("CI-CD-pipeline-Lab-1") {
+                    bat 'chcp 65001 && pytest --cov=src'
+                }
+            }
+        }
+
+        stage('Login to DockerHub') {
+            steps {
+                bat 'chcp 65001 && docker login -u %DOCKERHUB_CREDS_USR% -p %DOCKERHUB_CREDS_PSW%'
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                script {
+                    try {
+                        bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && docker-compose build'
+                    } finally {
+                        bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && docker-compose up -d'
+                    }
+                }
+            }
+        }
+
+        stage('Check container logs') {
+            steps {
+                dir("CI-CD-pipeline-Lab-1") {
+                    bat 'docker logs --tail 1000 -f api_car_price'
+                }
+            }
+        }
+
+        stage('Push Docker image to DockerHub') {
+            steps {
+                bat 'chcp 65001 && docker push travissscottt/api_car_price:latest'
+            }
+        }
+    }
+
+    post {
+        always {
+            bat 'chcp 65001 && docker logout'
+        }
+    }
+}
