@@ -19,27 +19,27 @@ pipeline {
         stage('Clone GitHub Repository') {
             steps {
                 cleanWs()
-                sh 'git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
+                bat 'chcp 65001 && git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
             }
         }
 
         stage('Checkout Repo Dir') {
             steps {
-                sh 'cd CI-CD-pipeline-Lab-1 && ls -lash'
+                bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && dir'
             }
         }
 
         stage('Run Unit Tests') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    sh 'pytest --cov=src'
+                    bat 'chcp 65001 && pytest --cov=src'
                 }
             }
         }
 
         stage('Login to DockerHub') {
             steps {
-                sh "docker login -u ${DOCKERHUB_CREDS_USR} -p ${DOCKERHUB_CREDS_PSW}"
+                bat 'chcp 65001 && docker login -u %DOCKERHUB_CREDS_USR% -p %DOCKERHUB_CREDS_PSW%'
             }
         }
 
@@ -47,9 +47,14 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd CI-CD-pipeline-Lab-1 && docker compose build'
+                        bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && docker compose build'
                     } finally {
-                        sh 'cd CI-CD-pipeline-Lab-1 && docker compose up -d'
+                        bat '''
+                            chcp 65001
+                            cd CI-CD-pipeline-Lab-1
+
+                            docker compose up -d
+                        '''
                     }
                 }
             }
@@ -58,13 +63,13 @@ pipeline {
         stage('Check Container Logs') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    sh '''
-                        container_id=$(docker ps -qf "name=api_container")
-                        if [[ -z "$container_id" ]]; then
+                    bat '''
+                        for /f %%i in ('docker ps -qf "name=api_container"') do set container_id=%%i
+                        if "%container_id%" == "" (
                             echo "No container running"
                             exit 1
-                        fi
-                        docker logs --tail 1000 -f "$container_id"
+                        )
+                        docker logs --tail 1000 -f %container_id%
                     '''
                 }
             }
@@ -72,15 +77,23 @@ pipeline {
 
         stage('Push Docker Image to DockerHub') {
             steps {
-                sh 'docker push travissscottt/api_car_price:latest'
+                bat '''
+                    for /f %%i in ('docker images -q travissscottt/api_car_price:latest') do set image_id=%%i
+                    if "%image_id%" == "" (
+                        echo "Error: Docker image not found. Build might have failed."
+                        exit 1
+                    )
+                    docker push travissscottt/api_car_price:latest
+                '''
             }
         }
     }
 
     post {
         always {
-            sh 'docker logout'
+            bat 'chcp 65001 && docker logout'
             cleanWs()
         }
     }
 }
+
