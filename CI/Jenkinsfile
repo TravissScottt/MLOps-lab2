@@ -32,10 +32,15 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    bat 'chcp 65001 && pytest --cov=src'
+                    bat '''
+                        chcp 65001
+                        call conda activate mlops
+                        pytest --cov=src
+                    '''
                 }
             }
         }
+
 
         stage('Login to DockerHub') {
             steps {
