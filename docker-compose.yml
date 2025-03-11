@@ -1,0 +1,8 @@
+services:
+  api:
+    image: api_car_price:latest
+    container_name: api_container
+    ports:
+      - "8000:8000"
+    environment:
+      - DOCKER_ENV=true

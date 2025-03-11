@@ -26,7 +26,10 @@ class PipelinePredictor():
         self.config.read("config.ini")
         
         # Путь к пайплайну
-        self.pipeline_path = self.config["RAND_FOREST"]["path"]
+        if os.getenv("DOCKER_ENV") == "true":
+            self.pipeline_path = "/app/experiments/rand_forest_pipeline.pkl"
+        else:
+            self.pipeline_path = self.config["RAND_FOREST"]["path"]
         
         # Загружаем пайплайн
         try:
