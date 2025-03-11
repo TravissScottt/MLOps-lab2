@@ -2,10 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDS=credentials('travissscottt-dockerhub')
-        LC_ALL = "en_US.UTF-8"
-        LANG    = "en_US.UTF-8"
-        LANGUAGE = "en_US.UTF-8"
+        DOCKERHUB_CREDS = credentials('travissscottt-dockerhub')
     }
 
     options {
@@ -13,65 +10,77 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
+    triggers {
+        pollSCM('* * * * *')
+    }
+
     stages {
 
-        stage('Clone github repository') {
+        stage('Clone GitHub Repository') {
             steps {
                 cleanWs()
-                bat 'chcp 65001 && git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
+                sh 'git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
             }
         }
 
-        stage('Checkout repo dir') {
+        stage('Checkout Repo Dir') {
             steps {
-                bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && dir'
+                sh 'cd CI-CD-pipeline-Lab-1 && ls -lash'
             }
         }
 
-        stage('Run unit tests') {
+        stage('Run Unit Tests') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    bat 'chcp 65001 && pytest --cov=src'
+                    sh 'pytest --cov=src'
                 }
             }
         }
 
         stage('Login to DockerHub') {
             steps {
-                bat 'chcp 65001 && docker login -u %DOCKERHUB_CREDS_USR% -p %DOCKERHUB_CREDS_PSW%'
+                sh "docker login -u ${DOCKERHUB_CREDS_USR} -p ${DOCKERHUB_CREDS_PSW}"
             }
         }
 
-        stage('Build Docker image') {
+        stage('Build and Run Docker Container') {
             steps {
                 script {
                     try {
-                        bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && docker-compose build'
+                        sh 'cd CI-CD-pipeline-Lab-1 && docker compose build'
                     } finally {
-                        bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && docker-compose up -d'
+                        sh 'cd CI-CD-pipeline-Lab-1 && docker compose up -d'
                     }
                 }
             }
         }
 
-        stage('Check container logs') {
+        stage('Check Container Logs') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    bat 'docker logs --tail 1000 -f api_car_price'
+                    sh '''
+                        container_id=$(docker ps -qf "name=api_container")
+                        if [[ -z "$container_id" ]]; then
+                            echo "No container running"
+                            exit 1
+                        fi
+                        docker logs --tail 1000 -f "$container_id"
+                    '''
                 }
             }
         }
 
-        stage('Push Docker image to DockerHub') {
+        stage('Push Docker Image to DockerHub') {
             steps {
-                bat 'chcp 65001 && docker push travissscottt/api_car_price:latest'
+                sh 'docker push travissscottt/api_car_price:latest'
             }
         }
     }
 
     post {
         always {
-            bat 'chcp 65001 && docker logout'
+            sh 'docker logout'
+            cleanWs()
         }
     }
 }
