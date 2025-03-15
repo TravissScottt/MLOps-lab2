@@ -23,38 +23,31 @@ pipeline {
             }
         }
 
-        stage('Download Data with DVC') {
-            steps {
-                dir("CI-CD-pipeline-Lab-1") {
-                    sh 'dvc pull'
-                }
-            }
-        }
-
         stage('Checkout Repo Dir') {
             steps {
                 sh 'cd CI-CD-pipeline-Lab-1 && ls -la'
             }
         }
-
-        stage('Run Unit Tests') {
+        
+        stage('Download Data and Run Unit Tests') {
             steps {
-                dir("CI-CD-pipeline-Lab-1") {
+                dir('CI-CD-pipeline-Lab-1') {
                     sh '''
                         source ~/miniconda3/etc/profile.d/conda.sh
                         conda activate mlops
+                        dvc pull
                         pytest --cov=src
                     '''
                 }
             }
         }
-
+        
         stage('Login to DockerHub') {
             steps {
                 sh 'docker login -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
             }
         }
-
+        
         stage('Build and Run Docker Container') {
             steps {
                 script {
@@ -69,7 +62,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Check Container Logs') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
@@ -84,7 +77,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Push Docker Image to DockerHub') {
             steps {
                 sh '''
@@ -109,5 +102,3 @@ pipeline {
         }
     }
 }
-
-
