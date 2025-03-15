@@ -19,30 +19,30 @@ pipeline {
         stage('Clone GitHub Repository') {
             steps {
                 cleanWs()
-                bat 'chcp 65001 && git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
+                sh 'git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
             }
         }
 
         stage('Download Data with DVC') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    bat 'dvc pull'
+                    sh 'dvc pull'
                 }
             }
         }
 
         stage('Checkout Repo Dir') {
             steps {
-                bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && dir'
+                sh 'cd CI-CD-pipeline-Lab-1 && ls -la'
             }
         }
 
         stage('Run Unit Tests') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    bat '''
-                        chcp 65001
-                        call "C:\\Users\\Ogurchikov\\anaconda3\\Scripts\\activate.bat" mlops
+                    sh '''
+                        source ~/miniconda3/etc/profile.d/conda.sh
+                        conda activate mlops
                         pytest --cov=src
                     '''
                 }
@@ -51,7 +51,7 @@ pipeline {
 
         stage('Login to DockerHub') {
             steps {
-                bat 'chcp 65001 && docker login -u %DOCKERHUB_CREDS_USR% -p %DOCKERHUB_CREDS_PSW%'
+                sh 'docker login -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
             }
         }
 
@@ -59,10 +59,9 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat 'chcp 65001 && cd CI-CD-pipeline-Lab-1 && docker compose build'
+                        sh 'cd CI-CD-pipeline-Lab-1 && docker compose build'
                     } finally {
-                        bat '''
-                            chcp 65001
+                        sh '''
                             cd CI-CD-pipeline-Lab-1
                             docker compose up -d
                         '''
@@ -74,27 +73,26 @@ pipeline {
         stage('Check Container Logs') {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
-                    bat '''
-                        for /f %%i in ('docker ps -qf "name=api_container"') do set container_id=%%i
-                        if "%container_id%" == "" (
+                    sh '''
+                        container_id=$(docker ps -qf "name=api_container")
+                        if [ -z "$container_id" ]; then
                             echo "No container running"
                             exit 1
-                        )
-                        docker logs --tail 1000 %container_id%
+                        fi
+                        docker logs --tail 1000 "$container_id"
                     '''
                 }
             }
         }
 
-
         stage('Push Docker Image to DockerHub') {
             steps {
-                bat '''
-                    for /f %%i in ('docker images -q travissscottt/api_car_price:latest') do set image_id=%%i
-                    if "%image_id%" == "" (
+                sh '''
+                    image_id=$(docker images -q travissscottt/api_car_price:latest)
+                    if [ -z "$image_id" ]; then
                         echo "Error: Docker image not found. Build might have failed."
                         exit 1
-                    )
+                    fi
                     docker push travissscottt/api_car_price:latest
                 '''
             }
@@ -103,12 +101,13 @@ pipeline {
 
     post {
         always {
-            bat 'chcp 65001 && docker stop api_container'
-            bat 'chcp 65001 && docker rm api_container'
-            bat 'chcp 65001 && docker rmi travissscottt/api_car_price:latest'
-            bat 'chcp 65001 && docker logout'
+            sh 'docker stop api_container'
+            sh 'docker rm api_container'
+            sh 'docker rmi travissscottt/api_car_price:latest'
+            sh 'docker logout'
             cleanWs()
         }
     }
 }
+
 
