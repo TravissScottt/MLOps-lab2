@@ -33,6 +33,7 @@ pipeline {
             steps {
                 dir('CI-CD-pipeline-Lab-1') {
                     sh '''
+                        #!/bin/bash
                         source /home/dolmachi/miniconda3/etc/profile.d/conda.sh
                         conda activate mlops
                         dvc pull
@@ -55,6 +56,7 @@ pipeline {
                         sh 'cd CI-CD-pipeline-Lab-1 && docker compose build'
                     } finally {
                         sh '''
+                            #!/bin/bash
                             cd CI-CD-pipeline-Lab-1
                             docker compose up -d
                         '''
@@ -67,6 +69,7 @@ pipeline {
             steps {
                 dir("CI-CD-pipeline-Lab-1") {
                     sh '''
+                        #!/bin/bash
                         container_id=$(docker ps -qf "name=api_container")
                         if [ -z "$container_id" ]; then
                             echo "No container running"
@@ -81,6 +84,7 @@ pipeline {
         stage('Push Docker Image to DockerHub') {
             steps {
                 sh '''
+                    #!/bin/bash
                     image_id=$(docker images -q travissscottt/api_car_price:latest)
                     if [ -z "$image_id" ]; then
                         echo "Error: Docker image not found. Build might have failed."
@@ -94,10 +98,13 @@ pipeline {
 
     post {
         always {
-            sh 'docker stop api_container'
-            sh 'docker rm api_container'
-            sh 'docker rmi travissscottt/api_car_price:latest'
-            sh 'docker logout'
+            sh '''
+                #!/bin/bash
+                docker stop api_container || true
+                docker rm api_container || true
+                docker rmi travissscottt/api_car_price:latest || true
+                docker logout || true
+            '''
             cleanWs()
         }
     }
