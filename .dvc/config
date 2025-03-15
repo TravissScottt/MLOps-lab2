@@ -1,4 +1,4 @@
 [core]
     remote = myremote
 ['remote "myremote"']
-    url = H:\Projects\ITMO\MLOps\DVC_Storage
+    url = /home/dolmachi/Projects/ITMO/MLOps/DVC_Storage
