@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    parameters {
+        booleanParam(name: 'RUN_CD', defaultValue: true, description: 'Запустить CD pipeline')
+    }
+
+    options {
+        timestamps()
+        skipDefaultCheckout(true)
+    }
+
+    stages {
+
+        stage('Clone Repository') {
+            steps {
+                cleanWs()
+                sh 'git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
+            }
+        }
+
+        stage('Deploy Using Prebuilt Image') {
+            steps {
+                dir('CI-CD-pipeline-Lab-1') {
+                    sh '''
+                        bash -c "docker pull travissscottt/api_car_price:latest && docker compose up -d"
+                    '''
+                }
+            }
+        }
+
+        stage('Wait for App Ready') {
+            steps {
+                sh 'sleep 15'
+            }
+        }
+
+        stage('Run Functional Tests') {
+            steps {
+                sh 'pytest -s tests/test_func_api.py'
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                bash -c "docker stop api_container || true; docker rm api_container || true; docker logout || true"
+            '''
+            cleanWs()
+        }
+    }
+}
