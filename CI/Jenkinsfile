@@ -33,7 +33,7 @@ pipeline {
             steps {
                 dir('CI-CD-pipeline-Lab-1') {
                     sh '''
-                        bash -c "source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && conda activate mlops && dvc pull && pytest --cov=src"
+                        bash -c "source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && conda activate mlops && dvc pull && pytest src/unit_tests --cov=src"
                     '''
                 }
             }
