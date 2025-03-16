@@ -1,5 +1,5 @@
-import os
 import pytest
+import os
 from sklearn.pipeline import Pipeline
 import sys
 
@@ -26,8 +26,7 @@ def test_train_and_evaluate(model):
 
     model.train_and_evaluate(pipeline, predict=True)
     assert os.path.isfile(model.pipeline_path), "Файл пайплайна не был создан"
-    
-    
+        
 def test_save_pipeline(model):
     """Проверяем, что пайплайн сохраняется корректно"""
     pipeline = model.create_pipeline(use_config=False)

@@ -76,7 +76,9 @@ class PipelinePredictor():
         # Functional test
         elif args.test == "func":
             try:
-                tests_path = os.path.join(os.getcwd(), "tests")
+                # Получаем путь к тестовым json
+                base_dir= os.path.dirname(os.path.dirname(__file__))  
+                tests_path = os.path.join(base_dir, "tests", "test_data")
                 
                 # Собираем все примеры
                 all_X, all_y = [], []
