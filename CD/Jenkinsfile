@@ -38,7 +38,7 @@ pipeline {
         stage('Run Functional Tests') {
             steps {
                 sh '''
-                    bash -c "source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && conda activate mlops && pytest -s tests/test_func_api.py"
+                    bash -c "source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && conda activate mlops && pytest -s CI-CD-pipeline-Lab-1/tests/test_func_api.py"
                 '''
             }
         }
