@@ -37,7 +37,9 @@ pipeline {
 
         stage('Run Functional Tests') {
             steps {
-                sh 'pytest -s tests/test_func_api.py'
+                sh '''
+                    bash -c "source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && conda activate mlops && pytest -s tests/test_func_api.py"
+                '''
             }
         }
     }
@@ -45,7 +47,7 @@ pipeline {
     post {
         always {
             sh '''
-                bash -c "docker stop api_container || true; docker rm api_container || true; docker logout || true"
+                bash -c "docker stop api_container || true; docker rm api_container || true; docker rmi travissscottt/api_car_price:latest || true; docker logout || true"
             '''
             cleanWs()
         }
