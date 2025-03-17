@@ -10,12 +10,7 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
-    triggers {
-        pollSCM('H/5 * * * *')
-    }
-
     stages {
-
         stage('Clone GitHub Repository') {
             steps {
                 cleanWs()
@@ -25,7 +20,9 @@ pipeline {
 
         stage('Checkout Repo Dir') {
             steps {
-                sh 'cd CI-CD-pipeline-Lab-1 && ls -la'
+                dir('CI-CD-pipeline-Lab-1') {
+                    sh 'ls -la'
+                }
             }
         }
         
@@ -49,11 +46,13 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd CI-CD-pipeline-Lab-1 && docker compose build'
+                        dir('CI-CD-pipeline-Lab-1') {
+                            sh 'docker compose build'
+                        }
                     } finally {
-                        sh '''
-                            bash -c "cd CI-CD-pipeline-Lab-1 && docker compose up -d"
-                        '''
+                        dir('CI-CD-pipeline-Lab-1') {
+                            sh 'bash -c "docker compose up -d"'
+                        }
                     }
                 }
             }

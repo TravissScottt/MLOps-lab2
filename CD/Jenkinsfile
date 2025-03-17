@@ -1,25 +1,20 @@
 pipeline {
     agent any
 
-    parameters {
-        booleanParam(name: 'RUN_CD', defaultValue: true, description: 'Запустить CD pipeline')
-    }
-
     options {
         timestamps()
         skipDefaultCheckout(true)
     }
 
     stages {
-
         stage('Clone Repository') {
             steps {
                 cleanWs()
                 sh 'git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
             }
         }
-
-        stage('Deploy Using Prebuilt Image') {
+        
+        stage('Deploy Using Docker Compose') {
             steps {
                 dir('CI-CD-pipeline-Lab-1') {
                     sh '''
@@ -28,22 +23,27 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Wait for App Ready') {
             steps {
                 sh 'sleep 15'
             }
         }
-
-        stage('Run Functional Tests') {
+        
+        stage('Run Functional Tests Inside Container') {
             steps {
                 sh '''
-                    bash -c "source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && conda activate mlops && pytest -s CI-CD-pipeline-Lab-1/tests/test_func_api.py"
+                    container_id=$(docker ps -qf "name=api_container")
+                    if [ -z "$container_id" ]; then
+                        echo "No container running"
+                        exit 1
+                    fi
+                    docker exec $container_id pytest -s tests/test_func_api.py
                 '''
             }
         }
     }
-
+    
     post {
         always {
             sh '''

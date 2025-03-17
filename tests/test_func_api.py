@@ -6,13 +6,7 @@ import os
 import sys
 from sklearn.metrics import r2_score
 
-# Ищем путь до логера
-jenkins_src_path = os.path.join(os.getcwd(), "CI-CD-pipeline-Lab-1", "src")
-local_src_path = os.path.join(os.getcwd(), "src")
-if os.path.exists(jenkins_src_path):
-    sys.path.insert(1, jenkins_src_path)
-elif os.path.exists(local_src_path):
-    sys.path.insert(1, local_src_path)
+sys.path.insert(1, os.path.join(os.getcwd(), "src"))
 
 from logger import Logger
 
