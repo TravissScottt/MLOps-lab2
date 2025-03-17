@@ -1,6 +1,5 @@
 import pytest
 import json
-import math
 import requests
 import os
 import sys
