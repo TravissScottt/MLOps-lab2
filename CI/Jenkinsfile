@@ -102,8 +102,7 @@ pipeline {
                 docker rm api_container || true
                 docker stop mongodb_container || true
                 docker rm mongodb_container || true
-                # При желании можно снести сам образ:
-                # docker rmi travissscottt/api_car_price_2:latest || true
+                docker rmi travissscottt/api_car_price_2:latest || true
 
                 docker logout || true
             '''
