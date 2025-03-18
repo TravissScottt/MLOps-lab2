@@ -12,17 +12,23 @@ pipeline {
 
     stages {
 
-        stage('Clone GitHub Repository') {
+        stage('Clone Repository') {
             steps {
                 cleanWs()
                 sh 'git clone -b master https://github.com/TravissScottt/MLOps-lab2.git'
             }
         }
 
-        stage('Checkout Repo Dir') {
+        stage('Add config_secret.ini') {
             steps {
                 dir('MLOps-lab2') {
-                    sh 'ls -la'
+                    withCredentials([file(credentialsId: 'config_secret', variable: 'SECRET_FILE')]) {
+                        sh '''
+                            cp "$SECRET_FILE" config_secret.ini
+                            echo "Contents of MLOps-lab2 dir after adding secret:"
+                            ls -la
+                        '''
+                    }
                 }
             }
         }
@@ -32,9 +38,9 @@ pipeline {
                 dir('MLOps-lab2') {
                     sh '''
                         bash -c "
-                        source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && \
-                        conda activate mlops && \
-                        pytest src/unit_tests --cov=src --disable-warnings
+                            source /home/jenkins/miniconda3/etc/profile.d/conda.sh &&
+                            conda activate mlops &&
+                            pytest src/unit_tests --cov=src --disable-warnings
                         "
                     '''
                 }
@@ -50,14 +56,9 @@ pipeline {
         stage('Build and Run Docker Container') {
             steps {
                 script {
-                    try {
-                        dir('MLOps-lab2') {
-                            sh 'docker compose build'
-                        }
-                    } finally {
-                        dir('MLOps-lab2') {
-                            sh 'docker compose up -d'
-                        }
+                    dir('MLOps-lab2') {
+                        sh 'docker compose build'
+                        sh 'docker compose up -d'
                     }
                 }
             }
@@ -67,14 +68,12 @@ pipeline {
             steps {
                 dir("MLOps-lab2") {
                     sh '''
-                        bash -c '
-                        container_id=$(docker ps -qf "name=api_container");
+                        container_id=$(docker ps -qf "name=api_container")
                         if [ -z "$container_id" ]; then
-                            echo "No container running";
-                            exit 1;
-                        fi;
+                            echo "No container running"
+                            exit 1
+                        fi
                         docker logs --tail 1000 "$container_id"
-                        '
                     '''
                 }
             }
@@ -84,14 +83,12 @@ pipeline {
             steps {
                 dir('MLOps-lab2') {
                     sh '''
-                        bash -c '
-                        image_id=$(docker images -q travissscottt/api_car_price_lab2:latest);
+                        image_id=$(docker images -q travissscottt/api_car_price_2:latest)
                         if [ -z "$image_id" ]; then
-                            echo "Error: Docker image not found. Build might have failed.";
-                            exit 1;
-                        fi;
-                        docker push travissscottt/api_car_price_lab2:latest
-                        '
+                            echo "Error: Docker image not found. Build might have failed."
+                            exit 1
+                        fi
+                        docker push travissscottt/api_car_price_2:latest
                     '''
                 }
             }
@@ -101,14 +98,14 @@ pipeline {
     post {
         always {
             sh '''
-                bash -c "
-                docker stop api_container || true;
-                docker rm api_container || true;
-                docker stop mongodb_container || true;
-                docker rm mongodb_container || true;
-                docker rmi travissscottt/api_car_price_lab2:latest || true;
+                docker stop api_container || true
+                docker rm api_container || true
+                docker stop mongodb_container || true
+                docker rm mongodb_container || true
+                # При желании можно снести сам образ:
+                # docker rmi travissscottt/api_car_price_2:latest || true
+
                 docker logout || true
-                "
             '''
             cleanWs()
         }
