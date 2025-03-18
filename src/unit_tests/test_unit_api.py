@@ -3,7 +3,12 @@ import json
 import math
 import sys
 import os
+import mongomock
+import pymongo
 from fastapi.testclient import TestClient
+
+# Задаём подмену до импорта других модулей
+pymongo.MongoClient = mongomock.MongoClient
 
 sys.path.insert(1, os.path.join(os.getcwd(), "src"))
 

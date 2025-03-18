@@ -32,7 +32,6 @@ def test_predict(predictor):
 
 def test_test(predictor):
     """Тестируем test(): должен выполняться без ошибок"""
-
     with patch("sys.argv", ["predict.py", "--test", "smoke"]):
         assert predictor.test() == True, "Smoke test не прошёл"
     with patch("sys.argv", ["predict.py", "--test", "func"]):

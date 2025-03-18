@@ -2,7 +2,9 @@ import configparser
 import sys
 import os
 from pymongo import MongoClient
+import mongomock
 from logger import Logger
+
 
 SHOW_LOG = True
 logger = Logger(SHOW_LOG).get_logger(__name__)
@@ -12,14 +14,12 @@ def get_database():
     Читает параметры подключения к MongoDB из config_secret.ini, устанавливает соединение
     и возвращает объект базы данных.
     """
-    # Определяем путь к конфигу
     base_dir = os.path.dirname(__file__)
     config_file_path = os.path.join(base_dir, '..', 'config_secret.ini')
-    
     config = configparser.ConfigParser()
     config.read(config_file_path)
     
-    if 'DATABASE' not in config:
+    if 'DATABASE' not in config: # pragma: no cover
         logger.error(f"В файле {config_file_path} не найден раздел [DATABASE].")
         sys.exit(1)
     
@@ -30,7 +30,7 @@ def get_database():
     password = db_config.get('password')
     dbname = db_config.get('name')
     
-    # Формируем URI подключения
+    # Формируем URI
     uri = f"mongodb://{user}:{password}@{host}:{port}/{dbname}?authSource=admin"
     
     try:
@@ -38,7 +38,7 @@ def get_database():
         # Проверка подключения
         client.admin.command('ping')
         logger.info(f"Успешное подключение к базе данных '{dbname}' на {host}:{port}")
-    except Exception as e:
+    except Exception as e: # pragma: no cover
         logger.error("Ошибка подключения к MongoDB", exc_info=True)
         sys.exit(1)
     
