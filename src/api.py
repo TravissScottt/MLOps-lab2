@@ -14,7 +14,9 @@ from logger import Logger
 
 SHOW_LOG = True
 logger = Logger(SHOW_LOG).get_logger(__name__)
+
 predictor = PipelinePredictor()
+
 db = get_database()
 
 app = FastAPI()

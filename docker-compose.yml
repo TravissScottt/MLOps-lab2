@@ -7,7 +7,6 @@ services:
       - "8000:8000"
     environment:
       - DOCKER_ENV=true
-      - MONGO_URI=mongodb://mongodb:27017/my_database
 
   mongodb:
     image: mongo:5.0
