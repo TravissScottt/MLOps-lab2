@@ -47,7 +47,7 @@ pipeline {
     post {
         always {
             sh '''
-                bash -c "docker stop api_container || true; docker rm api_container || true; docker stop mongodb_container || true; docker rm mongodb_container || true; docker rmi travissscottt/api_car_price_2:latest || true; docker logout || true"
+                bash -c "docker stop api_container || true; docker rm api_container || true; docker stop mongodb_container || true; docker rm mongodb_container || true; docker rmi travissscottt/api_car_price_2:latest || true; docker rmi mongo:5.0 || true; docker logout || true"
             '''
             cleanWs()
         }
