@@ -7,3 +7,15 @@ services:
       - "8000:8000"
     environment:
       - DOCKER_ENV=true
+      - MONGO_URI=mongodb://mongodb:27017/my_database
+
+  mongodb:
+    image: mongo:5.0
+    container_name: mongodb_container
+    ports:
+      - "27017:27017"
+    # volumes:
+    #   - mongodb_data:/data/db
+
+# volumes:
+#   mongodb_data:
