@@ -38,7 +38,7 @@ pipeline {
                 dir('MLOps-lab2') {
                     sh '''
                         bash -c "
-                            source /home/jenkins/miniconda3/etc/profile.d/conda.sh &&
+                            source /home/dolmachi/miniconda3/etc/profile.d/conda.sh &&
                             conda activate mlops &&
                             pytest src/unit_tests --cov=src --disable-warnings
                         "
