@@ -1,7 +1,7 @@
 services:
   api:
     build: .
-    image: travissscottt/api_car_price:latest
+    image: travissscottt/api_car_price_2:latest
     container_name: api_container
     ports:
       - "8000:8000"

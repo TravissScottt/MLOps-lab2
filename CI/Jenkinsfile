@@ -11,68 +11,89 @@ pipeline {
     }
 
     stages {
+
         stage('Clone GitHub Repository') {
             steps {
                 cleanWs()
-                sh 'git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
+                sh 'git clone -b master https://github.com/TravissScottt/MLOps-lab2.git'
             }
         }
 
         stage('Checkout Repo Dir') {
             steps {
-                dir('CI-CD-pipeline-Lab-1') {
+                dir('MLOps-lab2') {
                     sh 'ls -la'
                 }
             }
         }
-        
-        stage('Download Data and Run Unit Tests') {
+
+        stage('Run Unit Tests') {
             steps {
-                dir('CI-CD-pipeline-Lab-1') {
+                dir('MLOps-lab2') {
                     sh '''
-                        bash -c "source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && conda activate mlops && dvc pull && pytest src/unit_tests --cov=src --disable-warnings"
+                        bash -c "
+                        source /home/dolmachi/miniconda3/etc/profile.d/conda.sh && \
+                        conda activate mlops && \
+                        pytest src/unit_tests --cov=src --disable-warnings
+                        "
                     '''
                 }
             }
         }
-        
+
         stage('Login to DockerHub') {
             steps {
                 sh 'docker login -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
             }
         }
-        
+
         stage('Build and Run Docker Container') {
             steps {
                 script {
                     try {
-                        dir('CI-CD-pipeline-Lab-1') {
+                        dir('MLOps-lab2') {
                             sh 'docker compose build'
                         }
                     } finally {
-                        dir('CI-CD-pipeline-Lab-1') {
-                            sh 'bash -c "docker compose up -d"'
+                        dir('MLOps-lab2') {
+                            sh 'docker compose up -d'
                         }
                     }
                 }
             }
         }
-        
+
         stage('Check Container Logs') {
             steps {
-                dir("CI-CD-pipeline-Lab-1") {
+                dir("MLOps-lab2") {
                     sh '''
-                        bash -c 'container_id=$(docker ps -qf "name=api_container"); if [ -z "$container_id" ]; then echo "No container running"; exit 1; fi; docker logs --tail 1000 "$container_id"'
+                        bash -c '
+                        container_id=$(docker ps -qf "name=api_container");
+                        if [ -z "$container_id" ]; then
+                            echo "No container running";
+                            exit 1;
+                        fi;
+                        docker logs --tail 1000 "$container_id"
+                        '
                     '''
                 }
             }
         }
-        
+
         stage('Push Docker Image to DockerHub') {
             steps {
-                sh '''
-                    bash -c 'image_id=$(docker images -q travissscottt/api_car_price:latest); if [ -z "$image_id" ]; then echo "Error: Docker image not found. Build might have failed."; exit 1; fi; docker push travissscottt/api_car_price:latest'
-                '''
+                dir('MLOps-lab2') {
+                    sh '''
+                        bash -c '
+                        image_id=$(docker images -q travissscottt/api_car_price_lab2:latest);
+                        if [ -z "$image_id" ]; then
+                            echo "Error: Docker image not found. Build might have failed.";
+                            exit 1;
+                        fi;
+                        docker push travissscottt/api_car_price_lab2:latest
+                        '
+                    '''
+                }
             }
         }
     }
@@ -80,7 +101,14 @@ pipeline {
     post {
         always {
             sh '''
-                bash -c "docker stop api_container || true; docker rm api_container || true; docker rmi travissscottt/api_car_price:latest || true; docker logout || true"
+                bash -c "
+                docker stop api_container || true;
+                docker rm api_container || true;
+                docker stop mongodb_container || true;
+                docker rm mongodb_container || true;
+                docker rmi travissscottt/api_car_price_lab2:latest || true;
+                docker logout || true
+                "
             '''
             cleanWs()
         }
