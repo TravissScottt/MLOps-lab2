@@ -2,7 +2,6 @@ import configparser
 import sys
 import os
 from pymongo import MongoClient
-import mongomock
 from logger import Logger
 
 
