@@ -1,4 +1,0 @@
-[core]
-    remote = myremote
-['remote "myremote"']
-    url = /home/dolmachi/Projects/ITMO/MLOps/DVC_Storage

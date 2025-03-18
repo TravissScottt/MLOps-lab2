@@ -1,5 +1,0 @@
-outs:
-- md5: f7e91be27f735854430e14aa8f4bd9ed
-  size: 564580
-  hash: md5
-  path: car_price_dataset.csv
