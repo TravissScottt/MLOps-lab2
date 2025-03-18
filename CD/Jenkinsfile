@@ -10,15 +10,15 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 cleanWs()
-                sh 'git clone -b master https://github.com/Dolmachi/CI-CD-pipeline-Lab-1.git'
+                sh 'git clone -b master https://github.com/TravissScottt/MLOps-lab2.git'
             }
         }
         
         stage('Deploy Using Docker Compose') {
             steps {
-                dir('CI-CD-pipeline-Lab-1') {
+                dir('MLOps-lab2') {
                     sh '''
-                        bash -c "docker pull travissscottt/api_car_price:latest && docker compose up -d"
+                        bash -c "docker pull travissscottt/api_car_price_2:latest && docker compose up -d"
                     '''
                 }
             }
@@ -47,7 +47,7 @@ pipeline {
     post {
         always {
             sh '''
-                bash -c "docker stop api_container || true; docker rm api_container || true; docker rmi travissscottt/api_car_price:latest || true; docker logout || true"
+                bash -c "docker stop api_container || true; docker rm api_container || true; docker stop mongodb_container || true; docker rm mongodb_container || true; docker rmi travissscottt/api_car_price_2:latest || true; docker logout || true"
             '''
             cleanWs()
         }
