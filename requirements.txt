@@ -10,3 +10,4 @@ optuna==4.2.1
 matplotlib==3.10.0 
 uvicorn==0.32.1
 requests==2.32.3
+pymongo==4.8.0
