@@ -1,2 +1,2 @@
-# CI-CD-pipeline-Lab-1
-CI/CD pipeline for ML
+# MLOps Lab 2
+MLOps Lab 2

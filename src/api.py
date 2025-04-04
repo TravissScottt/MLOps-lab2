@@ -3,25 +3,11 @@ from pydantic import BaseModel
 import pandas as pd
 import os
 import sys
-from datetime import datetime
-
-sys.path.insert(0, os.path.join(os.getcwd(), "src"))
 
 from predict import PipelinePredictor
-from database import get_database
+from database import MongoDBConnector
 from logger import Logger
 
-
-SHOW_LOG = True
-logger = Logger(SHOW_LOG).get_logger(__name__)
-
-predictor = PipelinePredictor()
-
-db = get_database()
-
-app = FastAPI()
-
-# Определяем модель входных данных
 class CarFeatures(BaseModel):
     Doors: int
     Year: int
@@ -33,25 +19,46 @@ class CarFeatures(BaseModel):
     Engine_Size: float
     Mileage: float
 
-@app.post("/predict")
-def predict_api(features: CarFeatures):
-    # Преобразуем входные данные в DataFrame для предсказания
-    input_data = pd.DataFrame([features.model_dump()])
-    prediction = predictor.predict(input_data)
-    
-    # Подготовка данных для сохранения в MongoDB
-    result_data = {
-         "input": features.model_dump(),
-         "prediction": prediction[0],
-         "timestamp": datetime.utcnow().isoformat()
-    }
-    
-    # Сохраняем результат в коллекцию 'predictions'
-    try:
-        result = db.predictions.insert_one(result_data)
-        logger.info(f"Prediction saved with id: {result.inserted_id}")
-    except Exception as e:
-        logger.error("Error saving prediction", exc_info=True)
-    
-    return {"prediction": prediction[0]}
+class CarPriceAPI:
+    def __init__(self):
+        """Инициализация API и зависимостей"""
+        self.logger = Logger(True).get_logger(__name__)
+        self.app = FastAPI()
+        self.predictor = PipelinePredictor()
+        self.db = MongoDBConnector().get_database()
+        self._register_routes()
 
+    def _register_routes(self):
+        """Регистрация маршрутов API"""
+        @self.app.get('/')
+        def health_check():
+            return {'health_check': 'OK'}
+
+        @self.app.post("/predict")
+        def predict(features: CarFeatures):
+            # Получаем данные и делаем предсказание
+            input_data = pd.DataFrame([features.model_dump()])
+            prediction = self.predictor.predict(input_data)[0]
+            
+            # Подготовка данных для сохранения в MongoDB
+            result_data = {
+                "input": features.model_dump(),
+                "prediction": prediction
+            }
+            
+            # Сохраняем результат в коллекцию 'predictions'
+            try:
+                result = self.db.predictions.insert_one(result_data)
+                self.logger.info(f"Prediction saved with id: {result.inserted_id}")
+            except Exception as e: # pragma: no cover
+                self.logger.error("Error saving prediction", exc_info=True)
+                
+            return {"prediction": prediction}
+
+    def get_app(self):
+        """Возвращает экземпляр FastAPI приложения"""
+        return self.app
+
+# Создаем экземпляр API
+api = CarPriceAPI()
+app = api.get_app()

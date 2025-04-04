@@ -12,7 +12,7 @@ SHOW_LOG = True # Отображать ли логи в консоли
 
 
 class DataMaker():
-    def __init__(self) -> None:
+    def __init__(self) -> None: 
         # Создаем объекты логера и конфигуратора
         logger = Logger(SHOW_LOG)
         self.config = configparser.ConfigParser()
@@ -20,7 +20,7 @@ class DataMaker():
         self.config.read("config.ini")
         
         # Пути к файлам
-        self.project_path = os.path.join(os.getcwd(), "data")
+        self.project_path = "data"
         self.data_path = os.path.join(self.project_path, "car_price_dataset.csv")
         self.X_path = os.path.join(self.project_path, "Car_X.csv")
         self.y_path = os.path.join(self.project_path, "Car_y.csv")

@@ -4,45 +4,28 @@ import os
 from pymongo import MongoClient
 from logger import Logger
 
-
-SHOW_LOG = True
-logger = Logger(SHOW_LOG).get_logger(__name__)
-
-def get_database():
-    """
-    Читает параметры подключения к MongoDB из config_secret.ini, устанавливает соединение
-    и возвращает объект базы данных.
-    """
-    base_dir = os.path.dirname(__file__)
-    config_file_path = os.path.join(base_dir, '..', 'config_secret.ini')
-    config = configparser.ConfigParser()
-    config.read(config_file_path)
+class MongoDBConnector:
+    def __init__(self):
+        self.logger = Logger(True).get_logger(__name__)
+        self.config = configparser.ConfigParser()
+        self.config.read("config_secret.ini")
+        self.db_config = self.config['DATABASE']
     
-    if 'DATABASE' not in config: # pragma: no cover
-        logger.error(f"В файле {config_file_path} не найден раздел [DATABASE].")
-        sys.exit(1)
-    
-    db_config = config['DATABASE']
-    host = db_config.get('host')
-    port = db_config.getint('port')
-    user = db_config.get('user')
-    password = db_config.get('password')
-    dbname = db_config.get('name')
-    
-    # Формируем URI
-    uri = f"mongodb://{user}:{password}@{host}:{port}/{dbname}?authSource=admin"
-    
-    try:
-        client = MongoClient(uri)
-        # Проверка подключения
-        client.admin.command('ping')
-        logger.info(f"Успешное подключение к базе данных '{dbname}' на {host}:{port}")
-    except Exception as e: # pragma: no cover
-        logger.error("Ошибка подключения к MongoDB", exc_info=True)
-        sys.exit(1)
-    
-    return client[dbname]
-
-if __name__ == "__main__":
-    db = get_database()
-    logger.info(f"База данных подключена: {db.name}")
+    def get_database(self):
+        '''Подключение к базе данных'''
+        # Данные для подключения
+        host = self.db_config.get('host')
+        port = self.db_config.getint('port')
+        user = self.db_config.get('user')
+        password = self.db_config.get('password')
+        dbname = self.db_config.get('name')
+        
+        try:
+            client = MongoClient(f"mongodb://{user}:{password}@{host}:{port}/")
+            client.admin.command('ping') # Проверка подключения
+            self.logger.info(f"Успешное подключение к базе данных '{dbname}' на {host}:{port}")
+        except Exception as e: # pragma: no cover
+            self.logger.error("Ошибка подключения к MongoDB", exc_info=True)
+            sys.exit(1)
+        
+        return client[dbname]

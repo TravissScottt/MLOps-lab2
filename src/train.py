@@ -41,7 +41,7 @@ class ForestPipelineModel():
         self.numeric_columns = ["Engine_Size", "Mileage"]
 
         # Путь для сохранения пайплайна
-        self.pipeline_path = os.path.join(os.getcwd(), "experiments", "rand_forest_pipeline.pkl")
+        self.pipeline_path = os.path.join("experiments", "rand_forest_pipeline.pkl")
 
     def create_pipeline(self, use_config: bool) -> Pipeline:
         """Создание пайплайна на основе RandomForestRegressor"""

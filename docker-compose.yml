@@ -1,20 +1,24 @@
 services:
   api:
     build: .
-    image: travissscottt/api_car_price_2:latest
-    container_name: api_container
+    image: travissscottt/api-image-2:latest
+    container_name: api-container
     ports:
       - "8000:8000"
-    environment:
-      - DOCKER_ENV=true
+    networks:
+    - app-network
+    depends_on:
+      - mongodb
 
   mongodb:
-    image: mongo:5.0
-    container_name: mongodb_container
-    ports:
-      - "27017:27017"
-    # volumes:
-    #   - mongodb_data:/data/db
-
-# volumes:
-#   mongodb_data:
+    image: mongo
+    container_name: mongodb-container
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=dolmachi
+      - MONGO_INITDB_ROOT_PASSWORD=12345
+    networks:
+      - app-network
+  
+networks:
+  app-network:
+    driver: bridge

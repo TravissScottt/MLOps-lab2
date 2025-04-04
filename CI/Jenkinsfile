@@ -38,8 +38,9 @@ pipeline {
                 dir('MLOps-lab2') {
                     sh '''
                         bash -c "
-                            source /home/dolmachi/miniconda3/etc/profile.d/conda.sh &&
-                            conda activate mlops &&
+                            python3 -m venv venv &&
+                            . venv/bin/activate &&
+                            pip install -r requirements.txt &&
                             pytest src/unit_tests --cov=src --disable-warnings
                         "
                     '''
@@ -55,11 +56,8 @@ pipeline {
 
         stage('Build and Run Docker Container') {
             steps {
-                script {
-                    dir('MLOps-lab2') {
-                        sh 'docker compose build'
-                        sh 'docker compose up -d'
-                    }
+                dir('MLOps-lab2') {
+                    sh 'bash -c "docker compose up -d"'
                 }
             }
         }
@@ -68,7 +66,7 @@ pipeline {
             steps {
                 dir("MLOps-lab2") {
                     sh '''
-                        container_id=$(docker ps -qf "name=api_container")
+                        container_id=$(docker ps -qf "name=api-container")
                         if [ -z "$container_id" ]; then
                             echo "No container running"
                             exit 1
@@ -83,12 +81,12 @@ pipeline {
             steps {
                 dir('MLOps-lab2') {
                     sh '''
-                        image_id=$(docker images -q travissscottt/api_car_price_2:latest)
+                        image_id=$(docker images -q travissscottt/api-image-2:latest)
                         if [ -z "$image_id" ]; then
                             echo "Error: Docker image not found. Build might have failed."
                             exit 1
                         fi
-                        docker push travissscottt/api_car_price_2:latest
+                        docker push travissscottt/api-image-2:latest
                     '''
                 }
             }
@@ -98,12 +96,12 @@ pipeline {
     post {
         always {
             sh '''
-                docker stop api_container || true
-                docker rm api_container || true
-                docker stop mongodb_container || true
-                docker rm mongodb_container || true
-                docker rmi travissscottt/api_car_price_2:latest || true
-                docker rmi mongo:5.0 || true
+                docker stop api-container || true
+                docker rm api-container || true
+                docker stop mongodb-container || true
+                docker rm mongodb-container || true
+                docker rmi travissscottt/api-image-2:latest || true
+                docker rmi mongo || true
                 docker logout || true
             '''
             cleanWs()
