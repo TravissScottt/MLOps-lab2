@@ -59,6 +59,7 @@ class CarPriceAPI:
         """Возвращает экземпляр FastAPI приложения"""
         return self.app
 
+
 # Создаем экземпляр API
 api = CarPriceAPI()
 app = api.get_app()

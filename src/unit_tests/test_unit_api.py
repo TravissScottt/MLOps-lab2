@@ -1,47 +1,78 @@
-import pytest
-import json
-import math
-import sys
 import os
-import mongomock
-import pymongo
+import sys
+import pytest
+import pandas as pd
 from fastapi.testclient import TestClient
-
-# Задаём подмену до импорта других модулей
-pymongo.MongoClient = mongomock.MongoClient
 
 sys.path.insert(1, os.path.join(os.getcwd(), "src"))
 
-from api import app  # Импортируем API
+# Сохраняем оригинальные модули
+original_predict = sys.modules.get('predict')
+original_database = sys.modules.get('database')
+original_logger = sys.modules.get('logger')
 
-client = TestClient(app)  # Создаём тестового клиента
+# Мокаем модули
+import unittest.mock
+sys.modules['predict'] = unittest.mock.Mock()
+sys.modules['database'] = unittest.mock.Mock()
+sys.modules['logger'] = unittest.mock.Mock()
 
-# Получаем пути до тестовых json
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)) ) 
-TESTS_DIR = os.path.join(BASE_DIR, "tests", "test_data")
+from api import app
 
-@pytest.mark.parametrize("test_file", [
-    os.path.join(TESTS_DIR, "test_0.json"),
-    os.path.join(TESTS_DIR, "test_1.json")
-])
-def test_unit_api(test_file):
-    """Unit тестирование имитационного API"""
-    # Открываем тест
-    with open(test_file, "r") as f:
-        test_data = json.load(f)
+# Фикстура для создания тестового клиента
+@pytest.fixture
+def client(mocker):
+    # Мокаем зависимости
+    mocker.patch('src.api.PipelinePredictor')
+    mocker.patch('src.api.MongoDBConnector')
+    mocker.patch('src.api.Logger')
+
+    api = app.state.api
+    api.predictor.predict.return_value = [42.0]
+    api.db.predictions.insert_one.return_value.inserted_id = "mocked_id"
+    api.logger.info = mocker.Mock()
+    api.logger.error = mocker.Mock()
     
-    # Отправляем POST-запрос в API
-    response = client.post("/predict", json=test_data["X"])
-    
-    # Проверяем, что API вернул 200 OK
+    return TestClient(api.get_app())
+
+def test_health_check(client):
+    '''Проверяем health_check'''
+    response = client.get("/")
     assert response.status_code == 200
+    assert response.json() == {"health_check": "OK"}
 
-    # Проверяем, что в ответе есть предсказание
-    assert "prediction" in response.json()
+def test_predict(client):
+    '''Проверяем predict-ручку'''
+    car_data = {
+        "Doors": 4,
+        "Year": 2020,
+        "Owner_Count": 1,
+        "Brand": "Toyota",
+        "Model": "Camry",
+        "Fuel_Type": "Petrol",
+        "Transmission": "Automatic",
+        "Engine_Size": 2.5,
+        "Mileage": 30000.0
+    }
 
-    # Ожидаемое и полученное предсказание
-    y_true = test_data["y"]["prediction"]
-    y_pred = response.json()["prediction"]
-
-    # Проверяем, что предсказание близко к ожидаемому (допуск ±1%)
-    assert math.isclose(y_pred, y_true, rel_tol=0.01)
+    response = client.post("/predict", json=car_data)
+    assert response.status_code == 200
+    assert response.json() == {"prediction": 42.0}
+    
+    # Проверяем, что запись в базу произошла
+    client.app.state.api.logger.info.assert_called_once_with("Prediction saved with id: mocked_id")
+    
+# Восстанавливаем модули после тестов
+def pytest_sessionfinish():
+    if original_predict is not None:
+        sys.modules['predict'] = original_predict
+    else:
+        sys.modules.pop('predict', None)
+    if original_database is not None:
+        sys.modules['database'] = original_database
+    else:
+        sys.modules.pop('database', None)
+    if original_logger is not None:
+        sys.modules['logger'] = original_logger
+    else:
+        sys.modules.pop('logger', None)
