@@ -1,20 +1,17 @@
 import configparser
 import os
 import pandas as pd
+from logger import Logger
 from sklearn.model_selection import train_test_split
 import sys
 import traceback
 
-from logger import Logger
-
 TEST_SIZE = 0.2 # Доля тестовой выборки
-SHOW_LOG = True # Отображать ли логи в консоли
-
 
 class DataMaker():
     def __init__(self) -> None: 
         # Создаем объекты логера и конфигуратора
-        logger = Logger(SHOW_LOG)
+        logger = Logger(True)
         self.config = configparser.ConfigParser()
         self.log = logger.get_logger(__name__)
         self.config.read("config.ini")

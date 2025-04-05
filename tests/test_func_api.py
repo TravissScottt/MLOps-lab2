@@ -1,10 +1,17 @@
 import os
+import sys
 import json
 import time
 import requests
 import configparser
 from pymongo import MongoClient
 from sklearn.metrics import r2_score
+
+sys.path.insert(1, os.path.join(os.getcwd(), "src"))
+
+from logger import Logger
+
+logger = Logger(True).get_logger(__name__)
 
 config = configparser.ConfigParser()
 config_path = os.path.join(os.getcwd(), "config_secret.ini")
@@ -64,5 +71,5 @@ def test_func_api_r2():
     
     # Вычисляем R^2-метрику
     r2 = r2_score(expected_values, db_predictions)
-    print(f"R^2 Score: {r2:.4f}")
     assert r2 >= 0.8, f"R^2 Score {r2:.4f} is below acceptable threshold"
+    logger.info(f"Functional test was successful! R^2 Score: {r2:.4f}")
