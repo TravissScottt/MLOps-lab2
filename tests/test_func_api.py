@@ -1,50 +1,68 @@
-import pytest
-import json
-import requests
 import os
-import sys
+import json
+import time
+import requests
+import configparser
+from pymongo import MongoClient
 from sklearn.metrics import r2_score
 
-sys.path.insert(1, os.path.join(os.getcwd(), "src"))
+config = configparser.ConfigParser()
+config_path = os.path.join(os.getcwd(), "config_secret.ini")
+config.read(config_path)
+db_config = config["DATABASE"]
 
-from logger import Logger
+host = db_config.get("host")
+port = db_config.get("port")
+user = db_config.get("user")
+password = db_config.get("password")
+DB_NAME = db_config.get("name")
 
-SHOW_LOG = True
-logger = Logger(SHOW_LOG).get_logger(__name__)
-
-# Получаем пути до тестовых JSON-файлов
-BASE_DIR = os.path.dirname(__file__)
-TESTS_DIR = os.path.join(BASE_DIR, "test_data")
+MONGO_URL = f"mongodb://{user}:{password}@{host}:{port}/"
 
 # URL API, запущенного в контейнере
 SERVER_URL = "http://localhost:8000/predict"
 
-def test_functional_predict_live():
-    """Функциональный тест API"""
-    test_files = [os.path.join(TESTS_DIR, f) for f in os.listdir(TESTS_DIR) if f.endswith('.json')]
+# Путь до папки с тестовыми JSON-файлами
+TESTS_DIR = os.path.join(os.path.dirname(__file__), "test_data")
+
+def test_func_api_r2():
+    """
+    Функциональный тест API:
+    - Для каждого тестового JSON отправляем запрос к API.
+    - Из базы извлекаем записанные предсказания.
+    - Вычисляем R² между предсказаниями из базы и истинными значениями.
+    - Тест проходит, если R² >= 0.8.
+    """
+    test_files = [os.path.join(TESTS_DIR, f) for f in os.listdir(TESTS_DIR) if f.endswith(".json")]
     
-    all_inputs = []
-    all_expected = []
-    
-    # Собираем входные данные и ожидаемые результаты
+    expected_values = []
+    # Отправляем запросы к API
     for test_file in test_files:
         with open(test_file, "r") as f:
-            test_data = json.load(f)
-        all_inputs.append(test_data["X"])
-        all_expected.append(test_data["y"]["prediction"])
-    
-    # Отправляем запросы и собираем предсказания
-    predictions = []
-    for input_data in all_inputs:
+            data = json.load(f)
+        input_data = data["X"]
+        expected = data["y"]["prediction"]
+        expected_values.append(expected)
+        
         response = requests.post(SERVER_URL, json=input_data)
         assert response.status_code == 200, f"Unexpected status code: {response.status_code}"
-        result = response.json()
-        assert "prediction" in result, "No prediction in response"
-        predictions.append(result["prediction"])
+        # Короткая задержка, чтобы запись успела произойти в базе
+        time.sleep(0.5)
     
-    # Вычисляем R²-метрику по всем примерам
-    r2 = r2_score(all_expected, predictions)
-    logger.info(f"Functional test R2 Score: {r2:.4f}")
+    # Подключаемся к базе данных и собираем предсказания
+    client = MongoClient(MONGO_URL)
+    db = client[DB_NAME]
+    db_predictions = []
     
-    # Проверяем, что R² выше порога
-    assert r2 >= 0.8, f"R2 Score {r2:.4f} is below acceptable threshold"
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            data = json.load(f)
+        input_data = data["X"]
+        record = db.predictions.find_one({"input": input_data})
+        assert record is not None, f"Record for input {input_data} not found in database"
+        db_predictions.append(record.get("prediction"))
+    
+    # Вычисляем R^2-метрику
+    r2 = r2_score(expected_values, db_predictions)
+    print(f"R^2 Score: {r2:.4f}")
+    assert r2 >= 0.8, f"R^2 Score {r2:.4f} is below acceptable threshold"
