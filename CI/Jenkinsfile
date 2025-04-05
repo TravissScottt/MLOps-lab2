@@ -41,7 +41,7 @@ pipeline {
                             python3 -m venv venv &&
                             . venv/bin/activate &&
                             pip install -r requirements.txt &&
-                            pytest src/unit_tests --cov=src --disable-warnings
+                            pytest src/unit_tests --cov=src
                         "
                     '''
                 }
@@ -54,10 +54,15 @@ pipeline {
             }
         }
 
-        stage('Build and Run Docker Container') {
+        stage('Build Images and Run Containers') {
             steps {
                 dir('MLOps-lab2') {
-                    sh 'bash -c "docker compose up -d"'
+                    withCredentials([
+                        string(credentialsId: 'mongo-username', variable: 'MONGO_INITDB_ROOT_USERNAME'),
+                        string(credentialsId: 'mongo-password', variable: 'MONGO_INITDB_ROOT_PASSWORD')
+                    ]) {
+                        sh 'docker-compose up -d'
+                    }
                 }
             }
         }
