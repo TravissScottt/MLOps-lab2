@@ -19,10 +19,7 @@ class FakeDBConfig:
 
 @patch("database.MongoClient")
 def test_get_database(mock_mongo):
-    """
-    Халтурный тест, который проверяет, что при вызове get_database()
-    мы получаем объект базы (mock), и что ping был вызван.
-    """
+    """Тестируем возвращение объекта базы"""
     # Подделываем MongoClient, чтобы не ходить в реальную БД
     mock_client = MagicMock()
     mock_db = MagicMock()
