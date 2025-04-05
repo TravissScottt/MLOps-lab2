@@ -1,31 +1,50 @@
 import os
 import sys
 import pytest
+import configparser
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(1, os.path.join(os.getcwd(), "src"))
 
 from database import MongoDBConnector
 
-# Фикстура для создания тестового коннектора
-@pytest.fixture
-def mongo_connector(mocker):
-    mocker.patch('pymongo.MongoClient')  # Мокаем MongoClient
+# Создадим "фейковый" конфиг, который поддерживает get и getint
+class FakeDBConfig:
+    def __init__(self, d):
+        self.d = d
+    def get(self, key, default=None):
+        return self.d.get(key, default)
+    def getint(self, key, default=None):
+        return int(self.d.get(key, default))
+
+@patch("database.MongoClient")
+def test_get_database(mock_mongo):
+    """
+    Халтурный тест, который проверяет, что при вызове get_database()
+    мы получаем объект базы (mock), и что ping был вызван.
+    """
+    # Подделываем MongoClient, чтобы не ходить в реальную БД
+    mock_client = MagicMock()
+    mock_db = MagicMock()
+    mock_client.__getitem__.return_value = mock_db
+    mock_mongo.return_value = mock_client
+
+    # Инициализируем коннектор и подменяем db_config на наш FakeDBConfig
     connector = MongoDBConnector()
-    connector.db_config = {
+    connector.db_config = FakeDBConfig({
         "host": "localhost",
-        "port": 27017,
-        "user": "testuser",
-        "password": "testpass",
-        "name": "testdb"
-    }
-    return connector
-
-def test_get_database_success(mongo_connector, mocker):
-    # Настраиваем мок для успешного подключения
-    mock_client = mongo_connector.client
-    mock_client.admin.command.return_value = {"ok": 1}  # Мок пинга
+        "port": "27017",
+        "user": "fake_user",
+        "password": "fake_pass",
+        "name": "test_db"
+    })
     
-    db = mongo_connector.get_database()
+    db = connector.get_database()
 
-    # Проверяем, что возвращается база
-    assert db == mock_client["testdb"]
+    # Проверяем, что вернулся именно mock_db
+    assert db == mock_db
+
+    # Проверяем, что вызван метод ping
+    mock_client.admin.command.assert_called_once_with('ping')
+    # Проверяем, что обращались к нужному имени БД
+    mock_client.__getitem__.assert_called_once_with("test_db")
