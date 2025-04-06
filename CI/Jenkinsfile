@@ -67,6 +67,12 @@ pipeline {
             }
         }
 
+        stage('Wait for App Ready') {
+            steps {
+                sh 'sleep 15'
+            }
+        }
+        
         stage('Check Container Logs') {
             steps {
                 dir("MLOps-lab2") {

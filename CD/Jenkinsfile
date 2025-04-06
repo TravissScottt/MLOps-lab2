@@ -22,7 +22,7 @@ pipeline {
                         string(credentialsId: 'mongo-password', variable: 'MONGO_INITDB_ROOT_PASSWORD')
                     ]) {
                         sh '''
-                            bash -c "docker pull travissscottt/api-image-2:latest && docker-compose up -d --no-build"
+                            bash -c "docker pull travissscottt/api-image-2:latest && docker-compose up -d"
                         '''
                     }
                 }
