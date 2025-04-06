@@ -58,10 +58,14 @@ pipeline {
             steps {
                 dir('MLOps-lab2') {
                     withCredentials([
-                        string(credentialsId: 'mongo-username', variable: 'MONGO_INITDB_ROOT_USERNAME'),
-                        string(credentialsId: 'mongo-password', variable: 'MONGO_INITDB_ROOT_PASSWORD')
+                        string(credentialsId: 'mongo-username', variable: 'MONGO_USERNAME'),
+                        string(credentialsId: 'mongo-password', variable: 'MONGO_PASSWORD')
                     ]) {
-                        sh 'docker-compose up -d'
+                        sh '''
+                            echo "MONGO_USERNAME=$MONGO_USERNAME" > .env
+                            echo "MONGO_PASSWORD=$MONGO_PASSWORD" >> .env
+                            docker-compose up -d
+                        '''
                     }
                 }
             }
