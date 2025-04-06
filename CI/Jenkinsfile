@@ -64,23 +64,7 @@ pipeline {
                         sh '''
                             echo "MONGO_USERNAME=$MONGO_USERNAME" > .env
                             echo "MONGO_PASSWORD=$MONGO_PASSWORD" >> .env
-                            docker-compose up -d
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Wait for App Ready') {
-            steps {
-                script {
-                    timeout(time: 60, unit: 'SECONDS') {
-                        sh '''
-                            until curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ | grep -q 200; do
-                                echo "Waiting for app to be ready..."
-                                sleep 2
-                            done
-                            echo "App is ready!"
+                            docker-compose up -d --build
                         '''
                     }
                 }

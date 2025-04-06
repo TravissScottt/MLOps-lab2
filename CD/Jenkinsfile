@@ -14,15 +14,18 @@ pipeline {
             }
         }
 
-        stage('Deploy Using Docker Compose') {
+        stage('Build Images and Run Containers') {
             steps {
                 dir('MLOps-lab2') {
                     withCredentials([
-                        string(credentialsId: 'mongo-username', variable: 'MONGO_INITDB_ROOT_USERNAME'),
-                        string(credentialsId: 'mongo-password', variable: 'MONGO_INITDB_ROOT_PASSWORD')
+                        string(credentialsId: 'mongo-username', variable: 'MONGO_USERNAME'),
+                        string(credentialsId: 'mongo-password', variable: 'MONGO_PASSWORD')
                     ]) {
                         sh '''
-                            bash -c "docker pull travissscottt/api-image-2:latest && docker-compose up -d"
+                            echo "MONGO_USERNAME=$MONGO_USERNAME" > .env
+                            echo "MONGO_PASSWORD=$MONGO_PASSWORD" >> .env
+                            docker pull travissscottt/api-image-2:latest
+                            docker-compose up -d
                         '''
                     }
                 }
