@@ -69,7 +69,17 @@ pipeline {
 
         stage('Wait for App Ready') {
             steps {
-                sh 'sleep 60'
+                script {
+                    timeout(time: 60, unit: 'SECONDS') {
+                        sh '''
+                            until curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ | grep -q 200; do
+                                echo "Waiting for app to be ready..."
+                                sleep 2
+                            done
+                            echo "App is ready!"
+                        '''
+                    }
+                }
             }
         }
         
